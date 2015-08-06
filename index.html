@@ -3,8 +3,17 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Paint JS</title>
+	<style>
+		.picturepanel canvas{
+			border: 1px solid black;
+		}
+	</style>
 </head>
 <body>
-	
+	<script src="paint.js"></script>
+	<script>
+		var parent = document.querySelector("body");
+		createPaint(parent);
+	</script>
 </body>
 </html>
