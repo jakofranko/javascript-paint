@@ -222,3 +222,30 @@ tools.Rectangle = function(event, cx) {
 		tracer.parentNode.removeChild(tracer);
 	});
 };
+
+function componentToHex(c) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+tools["Pick color"] = function(event, cx) {
+    // Your code here.
+    var currentPos = relativePos(event, cx.canvas);
+    var pixelX = currentPos.x, pixelY = currentPos.y;
+    var color = document.querySelector("[type=color]");
+    try {
+      var data = cx.getImageData(pixelX, pixelY, 1, 1).data;
+      var r = data[0];
+      var g = data[1];
+      var b = data[2];
+      var a = data[3];
+      cx.fillStyle = "rgb(" + r + ", " + g + ", " + b + ")";
+      color.value = rgbToHex(r, g, b);
+    } catch(e) {
+      alert(e);
+    }
+  };
