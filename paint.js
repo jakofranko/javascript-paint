@@ -232,7 +232,7 @@ function rgbToHex(r, g, b) {
     return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 }
 
-tools["Pick color"] = function(event, cx) {
+tools["Pick Color"] = function(event, cx) {
     // Your code here.
     var currentPos = relativePos(event, cx.canvas);
     var pixelX = currentPos.x, pixelY = currentPos.y;
@@ -248,4 +248,144 @@ tools["Pick color"] = function(event, cx) {
     } catch(e) {
       alert(e);
     }
-  };
+};
+
+
+// attach the .equals method to Array's prototype to call it on any array
+Array.prototype.equals = function (array) {
+    // if the other array is a falsy value, return
+    if (!array)
+        return false;
+
+    // compare lengths - can save a lot of time 
+    if (this.length != array.length)
+        return false;
+
+    for (var i = 0, l = this.length; i < l; i++) {
+        // Check if we have nested arrays
+        if (this[i] instanceof Array && array[i] instanceof Array) {
+            // recurse into the nested arrays
+            if (!this[i].equals(array[i]))
+                return false;       
+        }           
+        else if (this[i] != array[i]) { 
+            // Warning - two different object instances will never be equal: {x:20} != {x:20}
+            return false;   
+        }           
+    }       
+    return true;
+}
+
+// A couple helper functions from the solution
+  // Call a given function for all horizontal and vertical neighbors
+  // of the given point.
+  function forAllNeighbors(point, fn) {
+    fn({x: point.x, y: point.y + 1});
+    fn({x: point.x, y: point.y - 1});
+    fn({x: point.x + 1, y: point.y});
+    fn({x: point.x - 1, y: point.y});
+  }
+
+  // Given two positions, returns true when they hold the same color.
+  function isSameColor(data, pos1, pos2) {
+    var offset1 = (pos1.x + pos1.y * data.width) * 4;
+    var offset2 = (pos2.x + pos2.y * data.width) * 4;
+    for (var i = 0; i < 4; i++) {
+      if (data.data[offset1 + i] != data.data[offset2 + i])
+        return false;
+    }
+    return true;
+  }
+
+tools["Flood Fill"] = function(event, cx) {
+	// Marjin's solution...
+	var startPos = relativePos(event, cx.canvas);
+
+    var data = cx.getImageData(0, 0, cx.canvas.width,
+                               cx.canvas.height);
+    // An array with one place for each pixel in the image.
+    var alreadyFilled = new Array(data.width * data.height);
+
+    // This is a list of same-colored pixel coordinates that we have
+    // not handled yet.
+    var workList = [startPos];
+    while (workList.length) {
+      var pos = workList.pop();
+      var offset = pos.x + data.width * pos.y;
+      if (alreadyFilled[offset]) continue;
+
+      cx.fillRect(pos.x, pos.y, 1, 1);
+      alreadyFilled[offset] = true;
+
+      forAllNeighbors(pos, function(neighbor) {
+        if (neighbor.x >= 0 && neighbor.x < data.width &&
+            neighbor.y >= 0 && neighbor.y < data.height &&
+            isSameColor(data, startPos, neighbor))
+          workList.push(neighbor);
+      });
+    }
+
+	// var width = cx.canvas.width, height = cx.canvas.height;
+	// var thisX = event.clientX, thisY = event.clientY;
+	// var px = new PixelGrid(cx);
+	// var startingColor = px.get(thisX, thisY);
+
+	// This is following the steps that Marjin suggests in his hint, since my initial solution was too expensive...even this was still too expensive. I guess recursive functions are a no go.
+	// function processWorkList(workList) {
+	// 	// If the workList is empty, we're done!
+	// 	if(workList.length == 0) return;
+
+	// 	// Pop a newPos off the end of workList
+	// 	var newPos = workList.pop();
+
+	// 	// If it's in our list of already colored pixels, move on to the next one
+	// 	if(alreadyColored[newPos])
+	// 		processWorkList(workList);
+	// 	else {
+	// 		// Otherwise, get the x/y coordinates, then color them, and add them to our list of already colored elements
+	// 		var currentX = newPos.split(",")[0], currentY = newPos.split(",")[1];
+	// 		cx.fillRect(currentX, currentY, 1, 1);
+	// 		alreadyColored.push(currentX + "," + currentY);
+
+	// 		// If the non-diagonal, adjacent pixels are the starting color, add them to the workList
+	// 		if(px.get(currentX + 1, currentY).equals(startingColor))
+	// 			console.log(px.get(currentX - 1, currentY, canvasData, cx).equals(startingColor));
+	// 			workList.push(currentX + 1 + "," + currentY);
+
+	// 		if(px.get(currentX - 1, currentY).equals(startingColor))
+	// 			workList.push(currentX - 1 + "," + currentY);
+
+	// 		if(px.get(currentX, currentY + 1).equals(startingColor))
+	// 			workList.push(currentX + "," + currentY + 1);
+
+	// 		if(px.get(currentX, currentY - 1).equals(startingColor))
+	// 			workList.push(currentX + "," + currentY - 1);
+
+	// 		// console.log(workList);
+	// 		processWorkList(workList);
+	// 	}
+	// }
+
+	// processWorkList(workList);
+
+
+	// DANG IT! This is just too expensive. I hit the maximum call stack pretty quick with this. I'm still proud of my recursive thinking though...
+	// function traverse(x, y, canvasData, cx, color) {
+	// 	var currentX = x, currentY = y;
+
+	// 	cx.fillRect(currentX, currentY, 1, 1);
+	// 	alreadyColored.push(currentX + "," + currentY);
+
+	// 	if(getPixelData(currentX + 1, currentY, canvasData, cx).equals(color) && !alreadyColored[currentX + 1 + "," + currentY])
+	// 		traverse(currentX + 1, currentY, canvasData, cx, color);
+	// 	else if(getPixelData(currentX - 1, currentY, canvasData, cx).equals(color) && !alreadyColored[currentX - 1 + "," + currentY])
+	// 		traverse(currentX - 1, currentY, canvasData, cx, color);
+	// 	else if(getPixelData(currentX, currentY + 1, canvasData, cx).equals(color) && !alreadyColored[currentX + "," + currentY + 1])
+	// 		traverse(currentX, currentY + 1, canvasData, cx, color);
+	// 	else if(getPixelData(currentX, currentY - 1, canvasData, cx).equals(color) && !alreadyColored[currentX + "," + currentY - 1])
+	// 		traverse(currentX, currentY - 1, canvasData, cx, color);
+	// 	else
+	// 		return false;
+	// }
+	// traverse(thisX, thisY, canvasData, cx, targetColor);
+};
